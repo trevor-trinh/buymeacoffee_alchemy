@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-// Deployed to Goreli at 0xFd2F5f10e43ED1Db141EC362F529CD12d567f256
+// Deployed to Goreli at 0x381C5E1537f7559d64e943691d842350798c64e5
 
 contract BuyMeACoffee {
     // Event to emit when Memo is created
@@ -61,5 +61,15 @@ contract BuyMeACoffee {
     */
     function getMemos() external view returns (Memo[] memory) {
         return memos;
+    }
+
+    /**
+    @dev changes contract owner and thus withdrawal address
+    @param _address new owner address 
+    In production should probably use OpenZepplin Ownable contract
+    */
+    function changeOwner(address _address) external {
+        require(msg.sender == owner);
+        owner = payable(_address);
     }
 }

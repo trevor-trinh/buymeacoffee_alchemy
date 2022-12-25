@@ -10,7 +10,10 @@ async function getBalance(address) {
 async function printBalances(addresses) {
   let idx = 0;
   for (const address of addresses) {
-    console.log(`Address ${idx} balance: `, await getBalance(address));
+    console.log(
+      `${idx == 0 ? 'Contract' : 'Address ' + idx} balance: `,
+      await getBalance(address)
+    );
     idx++;
   }
 }
@@ -30,7 +33,8 @@ async function printMemos(memos) {
 
 async function main() {
   // Get sample accounts
-  const [owner, tipper1, tipper2, tipper3] = await hre.ethers.getSigners();
+  const [tipperTrevor, tipperAlbert, tipperMaya, tipperTommy] =
+    await hre.ethers.getSigners();
 
   // Get contract and deploy
   const BuyMeACoffee = await hre.ethers.getContractFactory('BuyMeACoffee');
@@ -39,30 +43,56 @@ async function main() {
   console.log('BuyMeACoffee deployed at: ', buyMeACoffee.address);
 
   // Check balances before coffee purchase
-  const addresses = [owner.address, tipper1.address, buyMeACoffee.address];
+  const addresses = [
+    buyMeACoffee.address,
+    tipperTrevor.address,
+    tipperAlbert.address,
+    tipperMaya.address,
+    tipperTommy.address,
+  ];
   console.log('== start ==');
   await printBalances(addresses);
 
   // Buy owner some coffee
   const tip = { value: hre.ethers.utils.parseEther('1') };
-  await buyMeACoffee.connect(tipper1).buyCoffee('Albert', 'Gm!', tip);
-  await buyMeACoffee.connect(tipper1).buyCoffee('Maya', 'meow food >.<', tip);
-  await buyMeACoffee.connect(tipper1).buyCoffee('Tommy', '🦍🦍🦍', tip);
+  await buyMeACoffee.connect(tipperAlbert).buyCoffee('Albert', 'Gm!', tip);
+  await buyMeACoffee.connect(tipperTommy).buyCoffee('Tommy', '🦍🦍🦍', tip);
+  await buyMeACoffee
+    .connect(tipperMaya)
+    .buyCoffee('Maya', 'meow food >.<', tip);
 
   // Check balances after coffee purchase
-  console.log('== bought coffee ==');
+  console.log('\n== bought coffee ==');
   await printBalances(addresses);
 
   // Withdraw contract funds to owner
-  await buyMeACoffee.connect(owner).withdrawTips();
+  await buyMeACoffee.connect(tipperTrevor).withdrawTips();
 
   // Check owner balance after withdraw
-  console.log('== withdraw tips ==');
+  console.log('\n== withdraw tips ==');
   await printBalances(addresses);
 
   // Read all memos recorded
-  console.log('== memos ==');
-  const memos = await buyMeACoffee.getMemos();
+  console.log('\n== memos ==');
+  let memos = await buyMeACoffee.getMemos();
+  printMemos(memos);
+
+  // Change owner and tip
+  console.log('\n== change ownership and tip ==');
+  await buyMeACoffee.connect(tipperTrevor).changeOwner(tipperMaya.address);
+  await buyMeACoffee
+    .connect(tipperTrevor)
+    .buyCoffee('Trevor', '学姐', { value: hre.ethers.utils.parseEther('3') });
+  await printBalances(addresses);
+
+  // Withdraw to new owner
+  console.log('\n== new owner withdraw ==');
+  await buyMeACoffee.connect(tipperMaya).withdrawTips();
+  await printBalances(addresses);
+
+  // Read all memos
+  console.log('\n== memos ==');
+  memos = await buyMeACoffee.getMemos();
   printMemos(memos);
 }
 
